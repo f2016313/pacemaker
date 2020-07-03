@@ -2,7 +2,7 @@
   unsigned long duration_moving_avg = 0;
   int ADC_in = 0;
 
-  int thresh = 256; //must be reprogrammed to respond to the analog circuit driving the ADC input.
+  int thresh = 700; //must be reprogrammed to respond to the analog circuit driving the ADC input.
   bool in_pulse = false;
   unsigned long current_pulse_time = 0;
   unsigned long latched_pulse_time = 0;
@@ -28,18 +28,19 @@ void loop() {
   {
 
     //check for too long a gap against the average
-    if(micros()>(duration_moving_avg+gap_start+latched_pulse_time*0.20)){
+    if(micros()>(duration_moving_avg+gap_start+latched_pulse_time*0.20))
+    {
       send_pulse();
       duration_moving_avg = (micros()-gap_start+duration_moving_avg)/2;
       gap_start = micros();     
     }
     //do not need overflow protection here as all are unsigned and of the same data-type
     
-    ADC_in = analogRead(A0); //read ECG input
+    
 
     // BPM measure and average section -- START --------------
     
-    
+    ADC_in = analogRead(A0); //read ECG input
     if(ADC_in>thresh)
       {
         in_pulse = true;
@@ -56,11 +57,13 @@ void loop() {
         while((analogRead(A0)>(thresh-20))&&(micros()<(pulse_start+standard_pulse_duration))); 
         //waiting for pulse to end
         //adding some hysterisis (thresh-20) to accomadate any noise/fluctuation in ECG signal --- USER PARAMETER
+        gap_start = micros();
         if(micros()>pulse_start)//timer overflow protection
          current_pulse_time = micros() - pulse_start;
         else
          current_pulse_time = 4294967295 - pulse_start + micros();
-        gap_start = micros();
+      
+        
         in_pulse = false;
         latched_pulse_time = current_pulse_time;
         current_pulse_time = 0;   
